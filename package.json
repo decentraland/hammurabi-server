@@ -2,12 +2,15 @@
   "name": "@dcl/hammurabi-server",
   "version": "1.0.0",
   "main": "dist/cli.js",
-  "repository": "git@github.com:decentraland/hammurabi.git",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/decentraland/hammurabi.git"
+  },
   "author": "Protocol Squad",
   "license": "Apache-2.0",
   "bin": {
-    "hammurabi": "./hammurabi",
-    "hammurabi-server": "./dist/cli.js"
+    "hammurabi": "hammurabi",
+    "hammurabi-server": "dist/cli.js"
   },
   "scripts": {
     "start": "./hammurabi --realm=localhost:8000",
