@@ -1,0 +1,50 @@
+/**
+ * This file contains the module bindings for the client VM of the SDK.
+ */
+
+import { EngineApiServiceDefinition, CrdtSendToRendererRequest } from '@dcl/protocol/out-js/decentraland/kernel/apis/engine_api.gen'
+import { TestingServiceDefinition } from '@dcl/protocol/out-js/decentraland/kernel/apis/testing.gen'
+import { RpcClientPort } from '@dcl/rpc'
+import * as codegen from '@dcl/rpc/dist/codegen'
+import { coerceMaybeU8Array } from '../quick-js/convert-handles'
+import { RuntimeServiceDefinition } from '@dcl/protocol/out-js/decentraland/kernel/apis/runtime.gen'
+import { UserIdentityServiceDefinition } from '@dcl/protocol/out-js/decentraland/kernel/apis/user_identity.gen'
+import { UserActionModuleServiceDefinition } from '@dcl/protocol/out-js/decentraland/kernel/apis/user_action_module.gen'
+import { RestrictedActionsServiceDefinition } from '@dcl/protocol/out-js/decentraland/kernel/apis/restricted_actions.gen'
+import { CommunicationsControllerServiceDefinition } from '@dcl/protocol/out-js/decentraland/kernel/apis/communications_controller.gen'
+import { SignedFetchServiceDefinition } from '@dcl/protocol/out-js/decentraland/kernel/apis/signed_fetch.gen'
+
+export function loadModuleForPort(port: RpcClientPort, moduleName: string) {
+  switch (moduleName) {
+    case '~system/EngineApi':
+      const originalService = codegen.loadService(port, EngineApiServiceDefinition)
+      // WARNING: quickJs is not yet capable of handling Uint8Array, so we need to coerce the Uint8Array
+      //          values manually. This is a temporary solution until the proper fix is implemented
+      return {
+        ...originalService,
+        async isServer() {
+          return { isServer: true }
+        },
+        async crdtSendToRenderer(payload: CrdtSendToRendererRequest) {
+          return await originalService.crdtSendToRenderer({ data: coerceMaybeU8Array(payload.data) })
+        }
+      }
+      
+    case '~system/Runtime':
+      return codegen.loadService(port, RuntimeServiceDefinition)
+    case '~system/CommunicationsController':
+      return codegen.loadService(port, CommunicationsControllerServiceDefinition)
+    case '~system/UserIdentity':
+      return codegen.loadService(port, UserIdentityServiceDefinition)
+    case '~system/UserActionModule':
+      return codegen.loadService(port, UserActionModuleServiceDefinition)
+    case '~system/RestrictedActions':
+      return codegen.loadService(port, RestrictedActionsServiceDefinition)
+    case '~system/SignedFetch':
+      return codegen.loadService(port, SignedFetchServiceDefinition)
+    case '~system/Testing':
+      return codegen.loadService(port, TestingServiceDefinition)
+    default:
+      throw new Error('Unknown module ' + moduleName)
+  }
+}
