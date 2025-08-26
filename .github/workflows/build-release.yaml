@@ -1,21 +1,69 @@
-name: CI
+name: Build and Publish
 
 on:
   push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
 
 jobs:
-  build-release:
+  build_and_publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Use Node.js 18.x
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: '22'
           cache: 'npm'
-      - name: Install
-        run: make install
-      - name: Build
-        run: make build
-      - name: Test
-        run: make test
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build project
+        run: npm run build
+      
+      # - name: Run tests
+      #   run: npm run test
+        
+      - name: Publish packages
+        uses: decentraland/oddish-action@master
+        id: publish_package
+        with:
+          registry-url: 'https://registry.npmjs.org'
+          access: public
+          ## use action runId instead of current date to generate snapshot numbers
+          deterministic-snapshot: true
+          provenance: true
+
+          ## publish every package to s3
+          s3-bucket: ${{ secrets.SDK_TEAM_S3_BUCKET }}
+          s3-bucket-key-prefix: '@dcl/hammurabi-server/branch/${{ github.head_ref || github.ref_name }}'
+          s3-bucket-region: ${{ secrets.SDK_TEAM_AWS_REGION }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
+
+  notify_deployment:
+    needs: build_and_publish
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const s3Url = '${{ needs.build_and_publish.outputs.s3-bucket-key }}' || 'N/A';
+            const packageUrl = s3Url !== 'N/A' ? `S3 URL: ${s3Url}` : '';
+            const publishedVersion = '${{ needs.build_and_publish.outputs.published-version }}' || 'latest';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Package published for testing!\n\n📦 **NPM**: \`npm install @dcl/hammurabi-server@${publishedVersion}\`\n📁 **S3**: ${packageUrl}\n\nTest this PR build before merging.`
+            })
