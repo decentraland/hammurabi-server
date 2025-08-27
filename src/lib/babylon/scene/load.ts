@@ -25,8 +25,7 @@ async function createSceneContext(engineScene: BABYLON.Scene, loadableScene: Loa
 
   await ctx.initAsyncJobs()
   
-    // Node.js environment - use in-process WebWorker runtime with MemoryTransport
-  console.log(`[HEADLESS] Using in-process runtime for scene ${entityId}`)
+  // Node.js environment - use in-process WebWorker runtime with MemoryTransport
   connectSceneContextUsingNodeJs(ctx, loadableScene)
   
   loadedScenesByEntityId.set(entityId, ctx)

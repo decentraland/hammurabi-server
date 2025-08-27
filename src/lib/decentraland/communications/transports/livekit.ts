@@ -46,18 +46,23 @@ export class LivekitAdapter implements MinimumCommunicationsTransport {
           address: address
         })
               })
-      .on(RoomEvent.ConnectionStateChanged, (state) => {
-        commsLogger.log(this.room.name, 'connection state changed', state)
-      })
       .on(RoomEvent.Disconnected, (reason) => {
         if (this.disposed) {
           return
         }
 
-        commsLogger.log(this.room.name, 'disconnected from room', reason, {
-          liveKitParticipantSid: this.room.localParticipant?.sid,
-          liveKitRoomSid: this.room.getSid()
-        })
+        // Only show the warning if it's not a manual disconnect during restart
+        if (reason !== DisconnectReason.CLIENT_INITIATED) {
+          console.error('\n' + '═'.repeat(60))
+          console.error('⚠️  LIVEKIT DISCONNECTED - SERVER COMMUNICATION LOST')
+          console.error('═'.repeat(60))
+          console.error(`Reason: ${DisconnectReason[reason] || reason}`)
+          console.error(`Room: ${this.room.name}`)
+          console.error('═'.repeat(60))
+          console.error('Press [R] to restart the server or [Ctrl+C] to exit')
+          console.error('═'.repeat(60) + '\n')
+        }
+        
         const kicked = reason === DisconnectReason.DUPLICATE_IDENTITY
         this.doDisconnect(kicked).catch((err) => {
           commsLogger.error(`error during disconnection ${err.toString()}`)
@@ -72,7 +77,7 @@ export class LivekitAdapter implements MinimumCommunicationsTransport {
 
   async connect(): Promise<void> {
     await this.room.connect(this.config.url, this.config.token)
-    commsLogger.log(this.room.name, `Connected to livekit room ${this.room.name}`, { sid: this.room.getSid(), metadata: this.room.metadata} )
+    commsLogger.log(`Connected to livekit room ${this.room.name?.split(':')[0]}`, { sid: await this.room.getSid(), metadata: this.room.metadata} )
   }
 
   async send(data: Uint8Array, { reliable }: SendHints, destination?: string[]): Promise<void> {

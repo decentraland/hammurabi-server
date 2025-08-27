@@ -347,14 +347,10 @@ export class SceneContext implements EngineApiInterface {
       for (const [_entity, component] of loadingComponents.iterator()) {
         has = true
         if (component.currentState === LoadingState.LOADING) {
-          this.log(`⌛️ Holding tick#0 processing because of LOADING for scene`)
           return
         }
       }
-      if (has) {
-        this.log(`✅ All GltfContainerLoadingState went out of LOADING state in tick#0`)
-      }
-      this.log('\n\n\n\n======================= Starting Scene Logs: ======================= \n\n\n\n')
+      this.log('\n\n\n\n======================= Starting Scene Logs: ======================= \n\n')
     }
 
 
@@ -419,6 +415,14 @@ export class SceneContext implements EngineApiInterface {
     if (this._avatarSystem) {
       this._avatarSystem.dispose()
       this._avatarSystem = undefined
+    }
+
+    // Disconnect transport if it exists
+    if (this._transport) {
+      this._transport.disconnect().catch(() => {
+        // Ignore disconnection errors during dispose
+      })
+      this._transport = undefined
     }
 
     this.stopped.resolve()

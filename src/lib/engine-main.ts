@@ -1,5 +1,6 @@
 // Node.js 18+ has native fetch
 import * as BABYLON from '@babylonjs/core'
+import { setupXMLHttpRequestPolyfill } from './polyfills/xmlhttprequest'
 import { Scene } from '@dcl/schemas'
 import { initEngine } from './babylon'
 import { createAvatarRendererSystem } from './babylon/avatar-rendering-system'
@@ -32,10 +33,30 @@ export interface EngineOptions {
 
 let initialized = false
 
+export function resetEngine() {
+  // Properly dispose all loaded scenes first
+  for (const [entityId, scene] of loadedScenesByEntityId.entries()) {
+    try {
+      scene.dispose()
+    } catch (e) {
+      console.error(`Error disposing scene ${entityId}:`, e)
+    }
+  }
+  
+  // Clear the map
+  loadedScenesByEntityId.clear()
+  
+  // Reset the initialization flag
+  initialized = false
+}
+
 export async function main(options: EngineOptions = {}): Promise<BABYLON.Scene> {
   if (initialized) {
     throw new Error('The engine cannot be initialized twice')
   }
+
+  // Setup XMLHttpRequest polyfill for GLTF loading before initializing Babylon.js
+  setupXMLHttpRequestPolyfill()
 
   initialized = true
   const { scene } = await initEngine(options.canvas)
@@ -101,7 +122,7 @@ export async function main(options: EngineOptions = {}): Promise<BABYLON.Scene> 
     ctx.attachLivekitTransport(sceneTransport)
   })
   const ctx = await loadSceneContextFromLocal(sceneContext, scene, { baseUrl: realm.baseUrl, isGlobal: false })
-  
+
   const { position } = pickWorldSpawnpoint((await ctx.deref()).loadableScene.entity.metadata as Scene)
   characterControllerSystem.teleport(position)
   characterControllerSystem.capsule.position.y += PLAYER_HEIGHT

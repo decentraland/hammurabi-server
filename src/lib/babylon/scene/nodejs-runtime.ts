@@ -45,9 +45,7 @@ rpcServer.setHandler(async function handler(port) {
 
 export async function connectSceneContextUsingNodeJs(ctx: SceneContext, loadableScene: LoadableScene) {
   const scene = loadableScene.entity.metadata as Scene
-  
-  console.log(`[NODEJS] Starting Process runtime for scene: ${scene.display?.title || 'unnamed scene'}`)
-  
+    
   try {
     // Create memory transport for in-process communication
     const memoryTransport = MemoryTransport()
@@ -66,10 +64,10 @@ export async function connectSceneContextUsingNodeJs(ctx: SceneContext, loadable
     await startProcessSceneRuntime(clientPort, {
       // create console wrappers
       error(...args) {
-        console.error(`[SCENE ERROR ${scene.display?.title || 'unnamed'}]`, ...args)
+        console.error('❌ [Scene Error]: ', ...args, '\n')
       },
       log(...args) {
-        console.log(`[SCENE LOG ${scene.display?.title || 'unnamed'}]`, ...args)
+        console.log(`[Scene Log]: `, ...args, '\n')
       },
       // set the update loop
       updateLoop: defaultUpdateLoop

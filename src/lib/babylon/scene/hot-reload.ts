@@ -27,7 +27,6 @@ export async function initHotReload(baseUrl: string, entityId: string, reloadSce
   await start()
 
   async function start(): Promise<void> {
-    console.log('init hot reload')
     try {
       wsConnection = new WebSocket(`ws://localhost:${port}`)
       wsConnection.binaryType = 'arraybuffer'
