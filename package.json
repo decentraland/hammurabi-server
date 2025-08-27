@@ -9,11 +9,10 @@
   "author": "Protocol Squad",
   "license": "Apache-2.0",
   "bin": {
-    "hammurabi": "hammurabi",
-    "hammurabi-server": "dist/cli.js"
+    "start": "./dist/cli.js"
   },
   "scripts": {
-    "start": "./hammurabi --realm=localhost:8000",
+    "start": "node dist/cli.js --realm=localhost:8000",
     "build": "tsc",
     "test": "jest",
     "prepublishOnly": "npm run build"
