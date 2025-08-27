@@ -4,100 +4,87 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Commands
 
-### NPM Package Usage (Recommended)
-The project is published as `@dcl/hammurabi-server` and runs the Decentraland protocol in headless mode using Babylon.js NullEngine:
+This project is a headless Node.js server implementation of the Decentraland protocol using Babylon.js NullEngine for 3D scene processing without rendering.
 
 ```bash
-# Run with default guest identity
-npx @dcl/hammurabi-server start --realm=localhost:8000
+# Build TypeScript to JavaScript
+npm run build
 
-# Run with custom wallet address
-npx @dcl/hammurabi-server start --realm=localhost:8000 --address=0x123...
+# Run tests
+npm run test
 
-# Run as authenticated user
-npx @dcl/hammurabi-server start --address=0x123... --authenticated
+# Start development server
+npm start  # runs: ./start --realm=localhost:8000
+
+# Run the server with specific realm
+npx @dcl/hammurabi-server --realm=localhost:8000
 ```
 
-The CLI reuses the same `main()` function from `engine-main.ts`:
-- **Headless mode**: `main({ identity: {...}, realm: {...} })` (no canvas = uses NullEngine)
-- **Scene Runtime**: Automatically detects environment and uses:
-  - **Browser**: WebWorker with isolated JavaScript execution
-  - **Node.js**: Same WebWorker runtime logic but with MemoryTransport (no actual worker threads)
-
-### Local Development CLI
-For local development, use the `./hammurabi` executable:
-
-- `./hammurabi start [realm=<url>]` - Start development server with optional realm
-- `./hammurabi build` - Build production bundle into `./static` folder  
-- `./hammurabi test [file=<path>] [--watch]` - Run tests with optional file filter and watch mode
-- `./hammurabi sdk-watch` - Launch SDK development mode with official Decentraland Explorer
-
-### Makefile Commands (used internally by CLI)
-- `make build` - Builds the project with production optimizations
-- `make dev` - Starts development server with watch mode on http://localhost:8099
-- `make test` - Runs all Jest tests with coverage
-- `make test-watch TESTARGS='test/file.spec.ts'` - Runs specific tests in watch mode
-- `make build-testing-realm` - Builds the static testing realm for scenes
-- `make update-snapshots` - Updates integration test snapshots
-
-The project uses esbuild for compilation, TypeScript for type checking, and Jest for testing.
+The project uses simple TypeScript compilation (`tsc`) instead of complex bundling. The compiled output goes to `dist/` folder.
 
 ## Project Architecture
 
-This is the **hammurabi** project - a reference implementation of the Decentraland protocol using Babylon.js that runs entirely in web browsers. The project serves as:
-- Documentation of current and future protocol standards
-- Experimental ground for protocol changes  
-- Educational guide for new Decentraland contributors
-- Prototyping platform for new features
-
-**Current Status**: Proof of Concept
+This is the **Hammurabi Server** - a headless implementation of the Decentraland protocol that runs entirely in Node.js without browser dependencies.
 
 ### Core Architecture Components
+
+**Engine Initialization (`src/lib/engine-main.ts`)**:
+- Entry point that creates Babylon.js NullEngine for headless 3D processing
+- Creates guest identity for authentication
+- Fetches realm configuration from `/about` endpoint
+- Initializes all systems (avatar rendering, scene culling, character controller, etc.)
+- Scene loading uses `loadSceneContextFromLocal` with hot reload support
 
 **Scene Management (`src/lib/babylon/scene/`)**:
 - `SceneContext` - Central class managing scene state, CRDT message processing, and entity lifecycle
 - `BabylonEntity` - Wrapper around Babylon.js objects with component-based architecture
-- WebWorker-based scene runtime for script execution isolation
+- **Node.js Runtime**: Uses `connectSceneContextUsingNodeJs` with in-process WebWorker runtime and MemoryTransport (no actual worker threads)
 - Hot reload support for local development
 
 **Communications System (`src/lib/decentraland/communications/`)**:
-- Multi-protocol adapter system supporting LiveKit, WebSocket rooms, and offline modes
-- `CommsTransportWrapper` - ADR-104 implementation for transport abstraction
-- `AvatarCommunicationSystem` - Per-scene avatar management with profile caching
-- `PlayerEntityManager` - Reserved entity allocation (entity 1 for local, 32-255 for remote players)
-- Position reporting and multiplayer avatar systems
-- Local server connection for previews via gatekeeper service at `localhost:3000`
-- ADR-204 compliant profile fetching from Catalyst network with version announcements
+- **LiveKit Transport** (`transports/livekit.ts`): Uses `@livekit/rtc-node` package for Node.js multiplayer
+  - Room management without browser-specific APIs
+  - Uses `connectionState` instead of `state` property
+  - No `waitForPCInitialConnection()` in Node.js version
+- `CommsTransportWrapper` - Transport abstraction layer
+- Scene-specific communications via `createSceneComms`
+- Local gatekeeper connection at `localhost:3000` for preview scenes
 
-**CRDT Wire Protocol (`src/lib/decentraland/crdt-wire-protocol/`)**:
-- Component-based entity system with conflict resolution
-- Last-write-wins and grow-only-set data structures
-- Message processing with quota-based cooperative scheduling
-- Protocol buffer serialization
-
-**SDK Components (`src/lib/decentraland/sdk-components/`)**:
-- Transform, mesh renderer, GLTF container, animator components
-- Avatar system: `avatarShapeComponent` (SDK7 fake avatars) and `avatarBaseComponent` (multiplayer players)
-- `playerIdentityDataComponent` for player identity information
-- Pointer events, raycasts, and collision detection
-- Material and billboard components with Babylon.js integration
+**Headless Adaptations**:
+- **Babylon.js** (`src/lib/babylon/index.ts`): Always uses NullEngine, no canvas/WebGL
+- **Avatar Rendering** (`src/lib/babylon/avatars/AvatarRenderer.ts`): 
+  - Skips UI texture creation when `OffscreenCanvas` is undefined
+  - No emote loading in headless mode
+  - Avatar components created but not visually rendered
+- **Asset Loading**: Custom XMLHttpRequest polyfill in `cli.ts` for GLTF loading
+- **Environment**: Simplified lighting without complex visual materials
 
 ### Key Technical Details
 
-- **Entity Allocation**: Uses Unity-compatible reserved entity ranges (32-255 for remote players, 1 for local player)
-- **Avatar Architecture**: Separate systems for SDK7 scene avatars vs real multiplayer players
-- **Profile System**: ADR-204 compliant with Catalyst-based profile fetching and version announcements
-- **Player Management**: `PlayerEntityManager` handles entity allocation/deallocation for multiplayer
-- Implements ADR-148 for frame processing and ADR-133 for main.crdt loading
-- Scene boundary calculation for message prioritization based on distance
-- Asset loading managed through centralized `AssetManager`
-- Support for parcel-based coordinate systems and world positioning
+- **Node.js 18+**: Uses native fetch API, no polyfills needed
+- **Error Resilience**: Global uncaught exception handlers prevent server crashes
+- **No DOM Dependencies**: All browser-specific code is conditional or removed
+- **LiveKit Node SDK**: Direct imports from `@livekit/rtc-node`, no conditional loading
+- **Entity Allocation**: Unity-compatible reserved ranges (1 for local player, 32-255 for remote)
+- **CRDT Protocol**: Component-based entity system with conflict resolution
+- **Profile System**: ADR-204 compliant with Catalyst-based fetching
 
-### Testing Realm
+### CLI Structure (`src/cli.ts`)
 
-The project includes a complete testing realm with scenes compiled using the Decentraland SDK:
-- Located in `testing-realm/` directory with pre-built scenes
-- Scenes are exported using `sdk-commands export-static` to generate static files
-- Can run in both the Babylon.js implementation and official Decentraland Explorer for compliance testing  
-- WebSocket room configuration: `ws-room-service.decentraland.org/rooms/hammurabi`
-- Static files served from `static/ipfs/` for scene content
+The CLI provides:
+- XMLHttpRequest polyfill for Babylon.js asset loading
+- Argument parsing for `--realm`, `--address`, `--authenticated` flags  
+- Global error handlers that keep server running despite errors
+- Direct execution as npm bin via `dist/cli.js`
+
+### GitHub Actions Publishing
+
+The `.github/workflows/build-release.yaml` workflow:
+- Triggers on pushes to main, all PRs, and releases
+- Uses `decentraland/oddish-action@master` for npm/S3 publishing
+- Creates deterministic snapshots for PR testing
+- Publishes to `@dcl/hammurabi-server` on npm
+
+### Testing
+
+The project uses Jest for testing. Integration tests may require the testing realm to be built, though most of that infrastructure has been simplified for the headless server.
