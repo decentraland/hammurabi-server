@@ -64,10 +64,12 @@ export async function connectSceneContextUsingNodeJs(ctx: SceneContext, loadable
     await startProcessSceneRuntime(clientPort, {
       // create console wrappers
       error(...args) {
-        console.error('❌ [Scene Error]: ', ...args, '\n')
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        console.error(`\x1b[90m[${timestamp}]\x1b[0m ❌`, ...args)
       },
       log(...args) {
-        console.log(`[Scene Log]: `, ...args, '\n')
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        console.log(`\x1b[90m[${timestamp}]\x1b[0m`, ...args)
       },
       // set the update loop
       updateLoop: defaultUpdateLoop
