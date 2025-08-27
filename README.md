@@ -10,8 +10,6 @@ This server can run Decentraland scenes in a headless environment, making it per
 - **Headless bots** and automated agents
 - **Performance testing** without browser overhead
 
-**Status: Production Ready** ✅
-
 ## Features
 
 - 🏃‍♂️ **Headless 3D Processing** - Full Babylon.js scene simulation without rendering
