@@ -4,7 +4,7 @@
   "main": "dist/cli.js",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/decentraland/hammurabi.git"
+    "url": "git+ssh://git@github.com/decentraland/hammurabi-server.git"
   },
   "author": "Protocol Squad",
   "license": "Apache-2.0",
