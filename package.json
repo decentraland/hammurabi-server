@@ -40,9 +40,7 @@
   ],
   "files": [
     "dist/",
-    "hammurabi",
-    "README.md",
-    "CLAUDE.md"
+    "README.md"
   ],
   "dependencies": {
     "@babylonjs/core": "^6.4.1",
