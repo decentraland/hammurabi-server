@@ -1,7 +1,12 @@
 {
   "name": "@dcl/hammurabi-server",
   "version": "1.0.0",
-  "main": "dist/cli.js",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./cli": "./dist/cli.js",
+    "./worker": "./dist/worker-bundle.cjs"
+  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/decentraland/hammurabi-server.git"
@@ -13,9 +18,14 @@
   },
   "scripts": {
     "start": "node dist/cli.js --realm=localhost:8000",
-    "build": "tsc",
+    "build": "npm run build:tsc && npm run build:esbuild",
+    "build:tsc": "tsc",
+    "build:esbuild": "node esbuild.config.js",
+    "build:worker": "node esbuild.config.js",
+    "build:production": "NODE_ENV=production npm run build",
+    "build:worker:production": "NODE_ENV=production node esbuild.config.js",
     "test": "jest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build:production"
   },
   "prettier": {
     "semi": false,
@@ -63,6 +73,7 @@
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
     "@types/ws": "^8.5.5",
+    "esbuild": "^0.25.9",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
     "typescript": "^5.0.4"

@@ -24,7 +24,7 @@ export async function connectLocalAdapter(baseUrl: string) {
         realm: {
           serverName: 'LocalPreview'
         },
-        realmName: 'LocalPreview',
+        realmName: 'LocalPreview',      
         sceneId: urn,
       }
     )
@@ -32,7 +32,7 @@ export async function connectLocalAdapter(baseUrl: string) {
       return await connectAdapter(result.json.adapter, identity, urn)
     }
     throw 'Invalid livekit connection'
-  } catch (e) {
+  } catch (e: any) { 
     console.log(e)
     throw e
   }
