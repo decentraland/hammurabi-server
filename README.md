@@ -1,4 +1,4 @@
-# Hammurabi Server
+# Hammurabi Headless
 
 
 A headless Node.js implementation of the Decentraland protocol using Babylon.js for 3D scene processing.
