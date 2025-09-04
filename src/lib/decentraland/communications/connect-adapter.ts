@@ -6,8 +6,9 @@ import { ExplorerIdentity } from "../identity/types"
 import { CommsAdapter } from "./types"
 
 // TODO: this should be an env var
-const COMMS_GATEKEEPER_URL = 'http://localhost:3000/get-server-scene-adapter'
-// 'https://comms-gatekeeper-local.decentraland.org/get-scene-adapter' 
+const COMMS_GATEKEEPER_URL = 
+// 'http://localhost:3000/get-server-scene-adapter'
+'https://comms-gatekeeper-local.decentraland.org/get-scene-adapter' 
 
 export async function connectLocalAdapter(baseUrl: string) {
   const { urn } = await getLoadableSceneFromLocalContext(baseUrl)
